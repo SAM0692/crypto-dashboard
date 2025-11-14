@@ -16,16 +16,15 @@ let lastEthTrade: TradeData | undefined;
 export class FinnhubService implements OnModuleInit, OnModuleDestroy {
     private readonly token = process.env.FINNHUB_API_KEY;
     private ws: WebSocket;
-    private finnhubClient: DefaultApi
+    private finnhubClient: DefaultApi;
+    private hourlyRates: Record<string, RateData[]> = {};
 
     private readonly symbols = [
         'BINANCE:BTCUSDT',
         'BINANCE:ETHUSDT',
         'BINANCE:USDCUSDT',
     ];
-    // We want to keep these records even in the case of an unexpected disconnection and re-connection
-    // so we create the variable here and create a reference to it in the connect() function 
-    private hourlyRates: Record<string, RateData[]> = {};
+
 
     constructor(private readonly ratesGateway: RatesGateway) { }
 
@@ -103,13 +102,10 @@ export class FinnhubService implements OnModuleInit, OnModuleDestroy {
         lastEthTrade = tradeData.findLast(t => t.s.includes("ETH")) || await this.getLastEthSnapshot() || lastEthTrade;
 
         for (const trade of tradeData) {
-            console.log(`Trade: p:${trade.p}, s: ${trade.s}`);
             const symbol = trade.s.replace("BINANCE:", "").replace("USDT", "");
 
             const isEth = symbol === "ETH"
-            console.log(`isEth: ${isEth}`);
             const exchangeRate = isEth ? trade.p : lastEthTrade!.p / trade.p;
-            console.log(`exchangeRate: ${exchangeRate}`);
             rates.push({
                 currencyPair: `ETH/${isEth ? "USDT" : symbol}`,
                 rate: exchangeRate,
